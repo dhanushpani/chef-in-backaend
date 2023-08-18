@@ -1,39 +1,53 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-require('dotenv').config()
+require('dotenv').config();
+const http = require('http');
+const fs = require('fs');
+var cors = require('cors');
+const { Server } = require('socket.io');
 
-const taskController = require('./controller/task.controller')
-
-
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+const customCss = fs.readFileSync(process.cwd() + '/swagger.css', 'utf8');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
+
+// const server = http.createServer(app);
+
+// const io = new Server(app, {
+// 	cors: {
+// 		origin: 'http://localhost:3000/dashboard/messages',
+// 		methods: ['GET', 'POST'],
+// 	},
+// });
+
+// io.on('connection', (socket) => {
+// 	console.log(socket.id);
+// 	app
+// 	socket.on('disconnect', () => {
+// 		console.log('User Disconnected', socket.id);
+// 	});
+// });
+
+app.use(
+	'/api-docs',
+	swaggerUi.serve,
+	swaggerUi.setup(swaggerDocument, { customCss })
+);
+
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get('/api/tasks', (req, res) => {
-    taskController.getTasks().then(data => res.json(data));
-});
+// users
+const userRouter = require('./routes/users.routes');
+const postRouter = require('./routes/post.routes');
 
-app.post('/api/task', (req, res) => {
-    console.log(req.body);
-    taskController.createTask(req.body.task).then(data => res.json(data));
-});
-
-app.put('/api/task', (req, res) => {
-    taskController.updateTask(req.body.task).then(data => res.json(data));
-});
-
-app.delete('/api/task/:id', (req, res) => {
-    taskController.deleteTask(req.params.id).then(data => res.json(data));
-});
-
-app.get('/', (req, res) => {
-    res.send(`<h1>API Works !!!</h1>`)
-});
-
-
+app.use('/api/users', userRouter);
+app.use('/api/posts', postRouter);
 
 app.listen(port, () => {
-    console.log(`Server listening on the port  ${port}`);
-})
+	console.log(`Server listening on the port  ${port}`);
+});
